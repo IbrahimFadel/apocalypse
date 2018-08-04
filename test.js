@@ -2,7 +2,7 @@ var game = new Phaser.Game(1400, 800, Phaser.CANVAS, 'phaser-example', { preload
 
 function preload() {
 	game.load.image('player', 'assets/player/player_pumpgun_stand.png');
-	game.load.image('playerRunning', 'assets/player/player_run_strip6.png', 64, 64);
+	game.load.spritesheet('playerRunning', 'assets/player/player_run_strip6.png', 80, 85, 6);
 	game.load.image('crosshair', 'assets/crosshairs/blue_ball.png');
 	game.load.image('bullet', 'assets/bullet2.png');
 	game.load.spritesheet('zombie', 'assets/enemies/zombiebasic.png', 95, 80, 15);
@@ -21,6 +21,8 @@ var prevFireTime = 0;
 var inventoryGraphics;
 var inventoryText;
 var zombies = [];
+var walkingTrueFalse = false;
+//var walk;
 
 class Zombie {
 	constructor(game, x, y) {
@@ -99,10 +101,6 @@ function create() {
     ammoCountText = game.add.text(16, 16, "Ammo: " + ammoCount, { fontSize: '16px', fill: '#ff0044' });
     ammoCountText.fixedToCamera = true;
 
-    game.input.onDown.add(changePlayerTexture, this);
-
-    player.animations.add('run', [0, 1, 2, 3, 4, 5], 10, true);
-
     createEnemies();
 
     drawInventory();
@@ -110,9 +108,11 @@ function create() {
 }
 
 function changePlayerTexture() {
-	player.loadTexture('playerRunning', 0);
-
-	player.animations.play('run');
+	if(walkingTrueFalse === true) {
+		player.loadTexture('playerRunning');
+	    player.animations.add("run", [0, 1, 2, 3, 4, 5], 10, true);
+		player.animations.play("run");
+	};
 }
 
 function handleCrosshair() {
@@ -180,13 +180,25 @@ function update() {
 	player.body.velocity.y = 0;
 	if(cursors.up.isDown) {
 		player.body.velocity.y = -200;
-	}  if(cursors.down.isDown) {
+		walkingTrueFalse = true;
+		changePlayerTexture();
+	} else if(cursors.down.isDown) {
+		walkingTrueFalse = true;
 		player.body.velocity.y = 200;
-	}  if(cursors.right.isDown) {
+		changePlayerTexture();
+	} else if(cursors.right.isDown) {
+		walkingTrueFalse = true;
 		player.body.velocity.x = 200;
-	}  if(cursors.left.isDown) {
+		changePlayerTexture();
+	} else if(cursors.left.isDown) {
+		walkingTrueFalse = true;
+		changePlayerTexture();
 		player.body.velocity.x = -200;
-	} 
+	} else {
+		walkingTrueFalse = false;
+		console.log("false!!!!");
+		player.loadTexture('player');
+	}
 
 	
 	

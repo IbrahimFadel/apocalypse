@@ -1,0 +1,23 @@
+{
+  "name": "apocalypsegame",
+  "version": "1.0.0",
+  "description": "Zombie Apocalypse!!!!",
+  "main": "test.js",
+  "scripts": {
+    "test": "start",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IbrahimFadel/apocalypse.git"
+  },
+  "author": "Ibrahim Fadel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IbrahimFadel/apocalypse/issues"
+  },
+  "homepage": "https://github.com/IbrahimFadel/apocalypse#readme",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
+}
