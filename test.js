@@ -33,6 +33,7 @@ var spawn1 = [600, 105];
 var spawn2 = [890, 500];
 var spawn3 = [1050, 215];
 var zombieSpawnLocations = [spawn1, spawn2, spawn3];
+var graphicsSprite;
 
 class Zombie {
 	constructor(game, x, y) {
@@ -56,8 +57,9 @@ class Zombie {
 		console.log("zombie set");
 	}
 
-	gotHit() {
-		this.zombie.kill();
+	gotHit(bullet, zombie) {
+		zombie.kill();
+		bullet.kill()
 		console.log("hit");
 	}
 
@@ -107,6 +109,8 @@ function create() {
 
     ammoCountText = game.add.text(16, 16, "Ammo: " + ammoCount, { fontSize: '16px', fill: '#ff0044' });
     ammoCountText.fixedToCamera = true;
+
+    graphicsSprite = game.add.sprite(0, 0);
 
     createEnemies();
 
@@ -175,6 +179,14 @@ function calculateDistanceBetween(object1, object2) {
 	let diffY = object1.y - object2.y;
 
 	let distance = Math.sqrt((diffX * diffX) + (diffY * diffY));
+
+	return distance;
+}
+
+function wakeZombie() {
+	let distance = calculateDistanceBetween(player, zombies[0]);
+
+	console.log(distance);
 }
 
 /**
@@ -184,20 +196,28 @@ function calculateDistanceBetween(object1, object2) {
 */
 
 function createEnemies() {
-	let otherZombies = [];
+	
+	let enemySpawned0 = false;
+	let enemySpawned1 = false;
+	let enemySpawned2 = false;
+
 	for(let i = 0; i < zombieAmmount; i++) {
 		let rndX;
 		let rndY;
 		let rndNum = Math.floor(Math.random() * 4);
-		if(rndNum === 0) {
+	
+		if(rndNum === 0 && enemySpawned0 === false) {
 			rndX = spawn1[0];
 			rndY = spawn1[1];
-		} else if(rndNum === 1) {
+			enemySpawned0 = true;
+		} else if(rndNum === 1 && enemySpawned1 === false) {
 			rndX = spawn2[0];
 			rndY = spawn2[1];
-		} else if(rndNum === 2) {
+			enemySpawned1 = true;
+		} else if(rndNum === 2 && enemySpawned2 === false) {
 			rndX = spawn3[0];
 			rndY = spawn3[1];
+			enemySpawned2 = true;
 		} else {
 			rndX = Math.random() * 600;
 			rndY = Math.random() * 600;
@@ -235,6 +255,7 @@ function drawHouse1() {
 
     wall.beginFill(0x00F0F8FF);
     wall.lineStyle(10, 0x00F0F8FF, 1);
+    wall.boundsPadding = 0;
 
     wall.moveTo(100, 0);
     wall.lineTo(300, 0);
@@ -261,6 +282,7 @@ function drawHouse2() {
 
     wall.beginFill(0x00F0F8FF);
     wall.lineStyle(10, 0x00F0F8FF, 1);
+    wall.boundsPadding = 0;
 
 	wall.moveTo(340, 400);
     wall.lineTo(540, 400);
@@ -287,6 +309,7 @@ function drawHouse3() {
 
     wall.beginFill(0x00F0F8FF);
     wall.lineStyle(10, 0x00F0F8FF, 1);
+    wall.boundsPadding = 0;
 
     wall.moveTo(500, 100);
     wall.lineTo(700, 100);
@@ -300,6 +323,8 @@ function drawHouse3() {
     wall.lineTo(500, 100);
 
     wall.endFill();
+
+	graphicsSprite.addChild(wall);
 }
 
 /**
@@ -312,6 +337,9 @@ function drawMap() {
 	drawHouse1();
 	drawHouse2();
 	drawHouse3();
+
+
+	game.physics.enable(graphicsSprite, Phaser.Physics.ARCADE);
 }
 
 
@@ -322,8 +350,9 @@ function drawMap() {
  
 function update() {
 	handleCrosshair();
+	wakeZombie();
 
-	//game.physics.arcade.collide(player, wall);
+	game.physics.arcade.overlap(this.body, graphicsSprite, null, this);
 
 	if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0) {
 		ammoCount--;
