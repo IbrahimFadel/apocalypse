@@ -17,7 +17,7 @@ function preload() {
 
 var cursors;
 var player;
-var ammoCount = 30;
+var ammoCount = 8;
 var fireRate = 100;
 var bullets;
 var ammoCountText;
@@ -34,6 +34,7 @@ var spawn2 = [890, 500];
 var spawn3 = [1050, 215];
 var zombieSpawnLocations = [spawn1, spawn2, spawn3];
 var graphicsSprite;
+var weaponReady = true;
 
 class Zombie {
 	constructor(game, x, y) {
@@ -100,17 +101,19 @@ function create() {
 
 	game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1);
 
-	weapon = game.add.weapon(30, 'bullet');
+	weapon = game.add.weapon(300, 'bullet');
 	weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
 	weapon.bulletSpeed = 400;
 	weapon.fireRate = 60;
 	weapon.trackSprite(player, 0, 0, true);
-	weapon.multiFire = true
+	weapon.multiFire = true;
+	weapon.bulletAngleVariance = 10;
 
     ammoCountText = game.add.text(16, 16, "Ammo: " + ammoCount, { fontSize: '16px', fill: '#ff0044' });
     ammoCountText.fixedToCamera = true;
 
     graphicsSprite = game.add.sprite(0, 0);
+
 
     createEnemies();
 
@@ -196,7 +199,7 @@ function wakeZombie() {
 */
 
 function createEnemies() {
-	
+
 	let enemySpawned0 = false;
 	let enemySpawned1 = false;
 	let enemySpawned2 = false;
@@ -342,6 +345,10 @@ function drawMap() {
 	game.physics.enable(graphicsSprite, Phaser.Physics.ARCADE);
 }
 
+function readyWeapon() {
+	weaponReady = true;
+}
+
 
 /*   Make zombies have 75% chance of spawning in a random house
 *  Houses have guns and loot and stuff
@@ -354,10 +361,16 @@ function update() {
 
 	game.physics.arcade.overlap(this.body, graphicsSprite, null, this);
 
-	if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0) {
+	if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true) {
 		ammoCount--;
 		prevFireTime = game.time.now;
-		weapon.fire();
+		for(let i = 0; i < 6; i++) {
+			weapon.fire();
+			weaponReady = false;
+		}
+
+		game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
+
 		ammoCountText.setText("Ammo: " + ammoCount);
 	}
 	
