@@ -1,3 +1,10 @@
+/*
+* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+* Apocalypse Game
+* Made with Phaser
+* By: Ibrahim Fadel
+* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+*/
 var game = new Phaser.Game(1400, 800, Phaser.CANVAS, 'phaser-example', { preload: preload, create: create, update: update });
 
 function preload() {
@@ -22,7 +29,10 @@ var inventoryGraphics;
 var inventoryText;
 var zombies = [];
 var walkingTrueFalse = false;
-//var walk;
+var spawn1 = [600, 105];
+var spawn2 = [890, 500];
+var spawn3 = [1050, 215];
+var zombieSpawnLocations = [spawn1, spawn2, spawn3];
 
 class Zombie {
 	constructor(game, x, y) {
@@ -67,16 +77,13 @@ class Zombie {
         
         game.physics.arcade.moveToXY(zombie, player.x, player.y, 100);
 
-        //zombie.rotation = Phaser.Math.angleBetween(zombie.x, zombie.y, player.x, player.y);
-
-        //game.physics.arcade.collide(this.zombie, this.zombie);
-
     	this.handleBulletCollision();
 	}
 }
 
 function create() {
 	game.world.setBounds(0, 0, 800*4, 800);
+	game.stage.backgroundColor = 'rgb(96, 128, 56)';
 
 	player = game.add.sprite(370, 290, 'player');
 	player.enableBody = true;
@@ -105,15 +112,30 @@ function create() {
 
     drawInventory();
 
+    drawMap();
 }
+
+/** 
+* Changes the players texture to 'playerRunning'
+* Returns: nothing
+* Param: none
+*/
 
 function changePlayerTexture() {
 	if(walkingTrueFalse === true) {
 		player.loadTexture('playerRunning');
 	    player.animations.add("run", [0, 1, 2, 3, 4, 5], 10, true);
 		player.animations.play("run");
+		walkingTrueFalse = true;
 	};
 }
+
+/**
+* Moves crosshair in all direction
+* Prevents crosshair from leaving a certain radius
+* @return nothing
+* @param none
+*/
 
 function handleCrosshair() {
 	crosshair.x = game.input.x;
@@ -135,22 +157,62 @@ function handleCrosshair() {
     player.rotation = Phaser.Math.angleBetween(player.x, player.y, crosshair.x, crosshair.y);
 }
 
+/**
+* Calulates the distance between two given objects
+* @return nothing
+* @param first object
+* @param second object
+*/
+
+function calculateDistanceBetween(object1, object2) {
+	let object1X = object1.x;
+	let object1Y = object1.y;
+
+	let object2X = object2.x;
+	let object2Y = object2.y;
+
+	let diffX = object1.x - object2.x;
+	let diffY = object1.y - object2.y;
+
+	let distance = Math.sqrt((diffX * diffX) + (diffY * diffY));
+}
+
+/**
+* Adds enemies to the game and choses it's spawn location
+* @return nothing
+* @param none
+*/
+
 function createEnemies() {
 	let otherZombies = [];
 	for(let i = 0; i < zombieAmmount; i++) {
-		zombies[i] = new Zombie(game, 600 + Math.random() * 600, 100 + Math.random() * 600);
+		let rndX;
+		let rndY;
+		let rndNum = Math.floor(Math.random() * 4);
+		if(rndNum === 0) {
+			rndX = spawn1[0];
+			rndY = spawn1[1];
+		} else if(rndNum === 1) {
+			rndX = spawn2[0];
+			rndY = spawn2[1];
+		} else if(rndNum === 2) {
+			rndX = spawn3[0];
+			rndY = spawn3[1];
+		} else {
+			rndX = Math.random() * 600;
+			rndY = Math.random() * 600;
+		}
+		zombies[i] = new Zombie(game, rndX, rndY);
 		zombies[i].setChaseAfter(player);
 		zombies[i].startUpdating();
-
-		/*for(let j = 0; j < zombieAmmount; j++) {
-			if(i === j) {
-				continue;
-			}
-			zombies[i].setOtherZombie(zombies[j]);
-			console.log(zombies[i] + "")
-		}*/
 	}
 } 
+
+/**
+* Draws the inventory at the bottom left of the game
+* @return nothing
+* @param none
+*/
 
 function drawInventory() {
 	let inventoryGraphicsArray = [];
@@ -161,12 +223,107 @@ function drawInventory() {
 	    inventoryGraphicsArray[i].drawRect(20, 350, 40, 40);
 	}
 }
+
+/**
+* Draws the first house
+* @return nothing
+* @param none
+*/
+
+function drawHouse1() {
+	let wall = game.add.graphics(500, 100);
+
+    wall.beginFill(0x00F0F8FF);
+    wall.lineStyle(10, 0x00F0F8FF, 1);
+
+    wall.moveTo(100, 0);
+    wall.lineTo(300, 0);
+    wall.moveTo(300, 0);
+    wall.lineTo(300, 140);
+    wall.moveTo(300, 140);
+    wall.lineTo(100, 140);
+    wall.moveTo(100, 140);
+    wall.lineTo(100, 115);
+    wall.moveTo(100, 30);
+    wall.lineTo(100, 0);
+
+    wall.endFill();
+}
+
+/**
+* Draws the second house
+* @return nothing
+* @param none
+*/
+
+function drawHouse2() {
+	let wall = game.add.graphics(500, 100);
+
+    wall.beginFill(0x00F0F8FF);
+    wall.lineStyle(10, 0x00F0F8FF, 1);
+
+	wall.moveTo(340, 400);
+    wall.lineTo(540, 400);
+    wall.moveTo(540, 400);
+    wall.lineTo(540, 540);
+    wall.moveTo(540, 540);
+    wall.lineTo(340, 540);
+    wall.moveTo(340, 540);
+    wall.lineTo(340, 520);
+    wall.moveTo(340, 440);
+    wall.lineTo(340, 400);
+
+    wall.endFill();
+}
+
+/**
+* Draws the third house
+* @return nothing
+* @param none
+*/
+
+function drawHouse3() {
+	let wall = game.add.graphics(500, 100);
+
+    wall.beginFill(0x00F0F8FF);
+    wall.lineStyle(10, 0x00F0F8FF, 1);
+
+    wall.moveTo(500, 100);
+    wall.lineTo(700, 100);
+    wall.moveTo(700, 100);
+    wall.lineTo(700, 240);
+    wall.moveTo(700, 240);
+    wall.lineTo(500, 240);
+    wall.moveTo(500, 240);
+    wall.lineTo(500, 220);
+    wall.moveTo(500, 140);
+    wall.lineTo(500, 100);
+
+    wall.endFill();
+}
+
+/**
+* Calls all drawHouse[i] functions
+* @return nothing
+* @param none
+*/
+
+function drawMap() {
+	drawHouse1();
+	drawHouse2();
+	drawHouse3();
+}
+
+
+/*   Make zombies have 75% chance of spawning in a random house
+*  Houses have guns and loot and stuff
+*  change player gun to shoot like shotgun
+*/  
  
 function update() {
-	//console.log("weapon.bullets = "+ weapon.bullets.toString());
-
-
 	handleCrosshair();
+
+	//game.physics.arcade.collide(player, wall);
 
 	if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0) {
 		ammoCount--;
@@ -174,29 +331,35 @@ function update() {
 		weapon.fire();
 		ammoCountText.setText("Ammo: " + ammoCount);
 	}
-
 	
 	player.body.velocity.x = 0;
 	player.body.velocity.y = 0;
 	if(cursors.up.isDown) {
 		player.body.velocity.y = -200;
-		walkingTrueFalse = true;
-		changePlayerTexture();
+		if(walkingTrueFalse === false) {
+			walkingTrueFalse = true;
+			changePlayerTexture();
+		}
 	} else if(cursors.down.isDown) {
-		walkingTrueFalse = true;
 		player.body.velocity.y = 200;
-		changePlayerTexture();
+		if(walkingTrueFalse === false) {
+			walkingTrueFalse = true;
+			changePlayerTexture();
+		}
 	} else if(cursors.right.isDown) {
-		walkingTrueFalse = true;
 		player.body.velocity.x = 200;
-		changePlayerTexture();
+		if(walkingTrueFalse === false) {
+			walkingTrueFalse = true;
+			changePlayerTexture();
+		}
 	} else if(cursors.left.isDown) {
-		walkingTrueFalse = true;
-		changePlayerTexture();
 		player.body.velocity.x = -200;
+		if(walkingTrueFalse === false) {
+			walkingTrueFalse = true;
+			changePlayerTexture();
+		}
 	} else {
 		walkingTrueFalse = false;
-		console.log("false!!!!");
 		player.loadTexture('player');
 	}
 
