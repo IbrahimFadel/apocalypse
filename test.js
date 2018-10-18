@@ -13,6 +13,8 @@ function preload() {
 	game.load.image('crosshair', 'assets/crosshairs/blue_ball.png');
 	game.load.image('bullet', 'assets/bullet2.png');
 	game.load.spritesheet('zombie', 'assets/enemies/zombiebasic.png', 95, 80, 15);
+	game.load.image('crate', 'assets/block.png');
+	game.load.image('ar', 'assets/ar.png');
 }
 
 var cursors;
@@ -35,6 +37,15 @@ var spawn3 = [1050, 215];
 var zombieSpawnLocations = [spawn1, spawn2, spawn3];
 var graphicsSprite;
 var weaponReady = true;
+
+var ar;
+
+var crates;
+var crate;
+
+var house1;
+var house2;
+var houhouse1
 
 class Zombie {
 	constructor(game, x, y) {
@@ -114,12 +125,27 @@ function create() {
 
     graphicsSprite = game.add.sprite(0, 0);
 
+    crates = game.add.group();
+
+    crates.enableBody = true;
+    crates.scale.setTo(0.3, 0.3);
+
+
+    for(let i = 0; i < Math.random() * 3; i++) {
+       crate = crates.create(360 + Math.random() * 2000, 120 + Math.random() * 2000, 'crate');  
+       crate.body.width = 0;
+   	   crate.body.height = 0;
+   	   crate.body.immovable = true;
+    }
+
+
+
+
 
     createEnemies();
 
     drawInventory();
 
-    drawMap();
 }
 
 /** 
@@ -247,106 +273,23 @@ function drawInventory() {
 	}
 }
 
-/**
-* Draws the first house
-* @return nothing
-* @param none
-*/
-
-function drawHouse1() {
-	let wall = game.add.graphics(500, 100);
-
-    wall.beginFill(0x00F0F8FF);
-    wall.lineStyle(10, 0x00F0F8FF, 1);
-    wall.boundsPadding = 0;
-
-    wall.moveTo(100, 0);
-    wall.lineTo(300, 0);
-    wall.moveTo(300, 0);
-    wall.lineTo(300, 140);
-    wall.moveTo(300, 140);
-    wall.lineTo(100, 140);
-    wall.moveTo(100, 140);
-    wall.lineTo(100, 115);
-    wall.moveTo(100, 30);
-    wall.lineTo(100, 0);
-
-    wall.endFill();
-}
-
-/**
-* Draws the second house
-* @return nothing
-* @param none
-*/
-
-function drawHouse2() {
-	let wall = game.add.graphics(500, 100);
-
-    wall.beginFill(0x00F0F8FF);
-    wall.lineStyle(10, 0x00F0F8FF, 1);
-    wall.boundsPadding = 0;
-
-	wall.moveTo(340, 400);
-    wall.lineTo(540, 400);
-    wall.moveTo(540, 400);
-    wall.lineTo(540, 540);
-    wall.moveTo(540, 540);
-    wall.lineTo(340, 540);
-    wall.moveTo(340, 540);
-    wall.lineTo(340, 520);
-    wall.moveTo(340, 440);
-    wall.lineTo(340, 400);
-
-    wall.endFill();
-}
-
-/**
-* Draws the third house
-* @return nothing
-* @param none
-*/
-
-function drawHouse3() {
-	let wall = game.add.graphics(500, 100);
-
-    wall.beginFill(0x00F0F8FF);
-    wall.lineStyle(10, 0x00F0F8FF, 1);
-    wall.boundsPadding = 0;
-
-    wall.moveTo(500, 100);
-    wall.lineTo(700, 100);
-    wall.moveTo(700, 100);
-    wall.lineTo(700, 240);
-    wall.moveTo(700, 240);
-    wall.lineTo(500, 240);
-    wall.moveTo(500, 240);
-    wall.lineTo(500, 220);
-    wall.moveTo(500, 140);
-    wall.lineTo(500, 100);
-
-    wall.endFill();
-
-	graphicsSprite.addChild(wall);
-}
-
-/**
-* Calls all drawHouse[i] functions
-* @return nothing
-* @param none
-*/
-
-function drawMap() {
-	drawHouse1();
-	drawHouse2();
-	drawHouse3();
-
-
-	game.physics.enable(graphicsSprite, Phaser.Physics.ARCADE);
-}
 
 function readyWeapon() {
 	weaponReady = true;
+}
+
+function killCrate(player, crate) {
+	crate.kill();
+	console.log(ammoCount)
+	ammoCount = ammoCount + 8;
+	ar = game.add.sprite(100, 100, 'ar');
+	ar.enableBody = true;
+	ar.scale.setTo(0.04, 0.04);
+}
+
+function arPickup(player, ar) {
+	ar.kill();
+	console.log("ar")
 }
 
 
@@ -359,7 +302,13 @@ function update() {
 	handleCrosshair();
 	wakeZombie();
 
-	game.physics.arcade.overlap(this.body, graphicsSprite, null, this);
+	game.physics.arcade.collide(player, crate);
+
+	game.physics.arcade.overlap(weapon.bullets, crates, killCrate, null, this);
+
+	game.physics.arcade.overlap(player, ar, arPickup);
+
+	ammoCountText.setText("Ammo: " + ammoCount);
 
 	if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true) {
 		ammoCount--;
@@ -371,30 +320,29 @@ function update() {
 
 		game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
 
-		ammoCountText.setText("Ammo: " + ammoCount);
 	}
 	
 	player.body.velocity.x = 0;
 	player.body.velocity.y = 0;
-	if(cursors.up.isDown) {
+	if(cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W)) {
 		player.body.velocity.y = -200;
 		if(walkingTrueFalse === false) {
 			walkingTrueFalse = true;
 			changePlayerTexture();
 		}
-	} else if(cursors.down.isDown) {
+	} else if(cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
 		player.body.velocity.y = 200;
 		if(walkingTrueFalse === false) {
 			walkingTrueFalse = true;
 			changePlayerTexture();
 		}
-	} else if(cursors.right.isDown) {
+	} else if(cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
 		player.body.velocity.x = 200;
 		if(walkingTrueFalse === false) {
 			walkingTrueFalse = true;
 			changePlayerTexture();
 		}
-	} else if(cursors.left.isDown) {
+	} else if(cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
 		player.body.velocity.x = -200;
 		if(walkingTrueFalse === false) {
 			walkingTrueFalse = true;
