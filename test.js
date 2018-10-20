@@ -15,6 +15,7 @@ function preload() {
 	game.load.spritesheet('zombie', 'assets/enemies/zombiebasic.png', 95, 80, 15);
 	game.load.image('crate', 'assets/block.png');
 	game.load.image('ar', 'assets/ar.png');
+	game.load.image('shotgun', 'assets/shotgun.png');
 }
 
 var cursors;
@@ -141,13 +142,15 @@ function create() {
    	   crate.body.immovable = true;
     }
 
-
-
-
-
     createEnemies();
 
     drawInventory();
+
+    var shotgun = game.add.sprite(0, 0, 'shotgun');
+    shotgun.scale.setTo(0.05, 0.05);
+    shotgun.fixedToCamera = true;
+    shotgun.cameraOffset.x = 120;
+    shotgun.cameraOffset.y = 760;
 
 }
 
@@ -285,7 +288,9 @@ function killCrate(player, crate) {
 	crate.kill();
 	console.log(ammoCount)
 	ammoCount = ammoCount + 8;
-	ar = game.add.sprite(100, 100, 'ar');
+	let crateX = crate.body.x;
+	let crateY = crate.body.y;
+	ar = game.add.sprite(crateX, crateY, 'ar');
 	ar.enableBody = true;
 	game.physics.arcade.enable(ar);
 	//ar.body.velocity.x = 100;
@@ -295,9 +300,11 @@ function killCrate(player, crate) {
 }
 
 function arPickup(player, ar) {
-	ar.kill();
+	ar.scale.setTo(0.025, 0.025);
+	ar.fixedToCamera = true;
+	ar.cameraOffset.x = 163;
+	ar.cameraOffset.y = 755;
 	gunSwitchAr()
-	console.log("ar")
 }
 
 function gunSwitchAr() {
