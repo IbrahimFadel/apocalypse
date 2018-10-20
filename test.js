@@ -1,7 +1,7 @@
 /*
 * >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 * Apocalypse Game
-* Made with Phaser
+* Made with Phaser and NodeJs
 * By: Ibrahim Fadel
 * >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 */
@@ -39,6 +39,7 @@ var graphicsSprite;
 var weaponReady = true;
 
 var ar;
+var gunisAr = false;
 
 var crates;
 var crate;
@@ -112,7 +113,7 @@ function create() {
 
 	game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1);
 
-	weapon = game.add.weapon(300, 'bullet');
+	weapon = game.add.weapon(30, 'bullet');
 	weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
 	weapon.bulletSpeed = 400;
 	weapon.fireRate = 60;
@@ -284,12 +285,27 @@ function killCrate(player, crate) {
 	ammoCount = ammoCount + 8;
 	ar = game.add.sprite(100, 100, 'ar');
 	ar.enableBody = true;
+	game.physics.arcade.enable(ar);
+	//ar.body.velocity.x = 100;
 	ar.scale.setTo(0.04, 0.04);
+	ar.body.width = 20;
+	ar.body.height = 20;
 }
 
 function arPickup(player, ar) {
 	ar.kill();
+	gunSwitchAr()
 	console.log("ar")
+}
+
+function gunSwitchAr() {
+	gunisAr = true;
+	weapon.bulletSpeed = 400;
+	weapon.fireRate = 60;
+	weapon.trackSprite(player, 0, 0, true);
+	weapon.multiFire = true;
+	weapon.bulletAngleVariance = 0;
+	weaponReady = true;
 }
 
 
@@ -310,17 +326,31 @@ function update() {
 
 	ammoCountText.setText("Ammo: " + ammoCount);
 
-	if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true) {
+
+	if(gunisAr != true) {
+		if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true) {
+			ammoCount--;
+			prevFireTime = game.time.now;
+			for(let i = 0; i < 6; i++) {
+				weapon.fire();
+				weaponReady = false;
+			}
+
+			game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
+
+		}
+	} else if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true && gunisAr === true) {
 		ammoCount--;
 		prevFireTime = game.time.now;
-		for(let i = 0; i < 6; i++) {
-			weapon.fire();
+		for(let i = 0; i < 30; i++) {
+				weapon.fire();
+				console.log(weaponReady);
+			}
 			weaponReady = false;
-		}
 
-		game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
-
+			game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
 	}
+
 	
 	player.body.velocity.x = 0;
 	player.body.velocity.y = 0;
