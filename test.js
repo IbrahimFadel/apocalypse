@@ -5,7 +5,7 @@
 * By: Ibrahim Fadel
 * >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 */
-var game = new Phaser.Game(1400, 800, Phaser.CANVAS, 'phaser-example', { preload: preload, create: create, update: update });
+var game = new Phaser.Game(1000, 800, Phaser.CANVAS, 'phaser-example', { preload: preload, create: create, update: update });
 
 function preload() {
 	game.load.image('player', 'assets/player/player_pumpgun_stand.png');
@@ -19,7 +19,7 @@ function preload() {
 
 var cursors;
 var player;
-var ammoCount = 8;
+var ammoCount = 50;
 var fireRate = 100;
 var bullets;
 var ammoCountText;
@@ -40,6 +40,7 @@ var weaponReady = true;
 
 var ar;
 var gunisAr = false;
+let arBulletsFired = 0;
 
 var crates;
 var crate;
@@ -114,7 +115,8 @@ function create() {
 	game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1);
 
 	weapon = game.add.weapon(30, 'bullet');
-	weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+	weapon.bulletLifeSpan = 10;
+	weapon.bulletKillType = Phaser.Weapon.KILL_CAMERA_BOUNDS;
 	weapon.bulletSpeed = 400;
 	weapon.fireRate = 60;
 	weapon.trackSprite(player, 0, 0, true);
@@ -342,13 +344,12 @@ function update() {
 	} else if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true && gunisAr === true) {
 		ammoCount--;
 		prevFireTime = game.time.now;
-		for(let i = 0; i < 30; i++) {
-				weapon.fire();
-				console.log(weaponReady);
-			}
+		weapon.fire();
+		arBulletsFired++;
+		if(arBulletsFired === 30) {
 			weaponReady = false;
-
 			game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
+		}
 	}
 
 	

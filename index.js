@@ -32,19 +32,16 @@ app.get('/assets/player/player_run_strip6.png', (req, res, next) => {
 
 app.get('/assets/crosshairs/blue_ball.png', (req, res, next) => {
 	res.sendFile(__dirname + '/assets/crosshairs/blue_ball.png');
-	console.log("hellooo");
 });;
 
 app.get('/assets/block.png', (req, res, next) => {
 	res.sendFile(__dirname + '/assets/block.png');
-	console.log("block");
 });;
 
 app.get('/assets/ar.png', (req, res, next) => {
 	res.sendFile(__dirname + '/assets/ar.png');
-	console.log("block");
 });;
 
 app.listen(PORT, () => {
-	console.log("Server listening on port: " + PORT + "");
+	("Server listening on port: " + PORT + "");
 });
