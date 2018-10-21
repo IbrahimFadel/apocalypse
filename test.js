@@ -16,11 +16,36 @@ function preload() {
 	game.load.image('crate', 'assets/block.png');
 	game.load.image('ar', 'assets/ar.png');
 	game.load.image('shotgun', 'assets/shotgun.png');
+	game.load.image('bush1', 'assets/bush.png');
+	game.load.image('bush2', 'assets/bush2.png');
 }
+
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+var loaded = false;
+
+var content = [
+"Apocalypse...",
+"Made by Ibrahim Fadel",
+"A game made with phaser",
+"",
+"In this post-apoctaliptic world, you must fight for",
+"your life against zombies, and whatever challenges you",
+"might face!"
+]
+
+var line = [];
+var wordIndex = 0;
+var lineIndex = 0;
+var wordDelay = 120;
+var lineDelay = 400;
+
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 var cursors;
 var player;
-var ammoCount = 50;
+
+var ammoCount;
 var fireRate = 100;
 var bullets;
 var ammoCountText;
@@ -39,21 +64,52 @@ var zombieSpawnLocations = [spawn1, spawn2, spawn3];
 var graphicsSprite;
 var weaponReady = true;
 
+var checkpointCleared = false;
+
 var ar;
 var gunisAr = false;
 let arBulletsFired = 0;
+var hasAr = false;
 
 var crates;
 var crate;
 
-var house1;
-var house2;
-var houhouse1
+var oneKey;
+var twoKey;
+
+var arAmmo = 30;
+var shotgunAmmo = 8;
+
+//Ammo type 0 is shotgun, 1 is ar
+var ammoType = 0;
+
+var inventorySlots = [
+	[120, 760], 
+	[163, 755]
+];
+
+
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+var healthGraphic;
+var healthText;
+
+
+if(ammoType === 0) {
+	ammoCount = shotgunAmmo;
+} else if(ammoType === 1) {
+	ammoCount = arAmmo;
+}
+
+
+
+var playerHealth = 100;
 
 class Zombie {
-	constructor(game, x, y) {
+	constructor(game, x, y, health) {
 		this.zombie = game.add.sprite(x, y, 'zombie');
 		game.physics.arcade.enable(this.zombie);
+		this.health = health;
+		health = 100;
 	}
 
 	setChaseAfter(sprite) {
@@ -69,13 +125,20 @@ class Zombie {
 
 	setOtherZombie(otherZombie) {
 		this.someOtherZombie = otherZombie;
-		console.log("zombie set");
 	}
 
 	gotHit(bullet, zombie) {
 		zombie.kill();
 		bullet.kill()
-		console.log("hit");
+	}
+
+	withinRange() {
+		let distance = calculateDistanceBetween(this.zombie, player);
+
+		if(distance <= 20 && playerHealth > 0) {
+			playerHealth = playerHealth - 0.5;
+			console.log(playerHealth);
+		}
 	}
 
 	handleBulletCollision() {
@@ -95,64 +158,102 @@ class Zombie {
         game.physics.arcade.moveToXY(zombie, player.x, player.y, 100);
 
     	this.handleBulletCollision();
+    	this.withinRange();
+    	//this.handleZombieCollisio(zombie, this.zombie);
 	}
 }
 
 function create() {
+
 	game.world.setBounds(0, 0, 800*4, 800);
 	game.stage.backgroundColor = 'rgb(96, 128, 56)';
 
-	player = game.add.sprite(370, 290, 'player');
-	player.enableBody = true;
-	game.physics.arcade.enable(player);
-	player.body.collideWorldBounds = true;
-	player.anchor.set(0.5);
+	//game.time.gamePaused()
 
-	crosshair = game.add.sprite(player.x + 200, player.y, 'crosshair');
-	crosshair.scale.setTo(0.2, 0.2);
+    text = game.add.text(32, 32, '', { font: "35px Arial", fill: "#19de65" });
 
-	cursors = game.input.keyboard.createCursorKeys();
+    nextLine();
 
-	game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1);
+    game.time.events.add(Phaser.Timer.SECOND * 10, function(){
+    	//loaded = true;
 
-	weapon = game.add.weapon(30, 'bullet');
-	weapon.bulletLifeSpan = 10;
-	weapon.bulletKillType = Phaser.Weapon.KILL_CAMERA_BOUNDS;
-	weapon.bulletSpeed = 400;
-	weapon.fireRate = 60;
-	weapon.trackSprite(player, 0, 0, true);
-	weapon.multiFire = true;
-	weapon.bulletAngleVariance = 10;
+    	text.kill();
 
-    ammoCountText = game.add.text(16, 16, "Ammo: " + ammoCount, { fontSize: '16px', fill: '#ff0044' });
-    ammoCountText.fixedToCamera = true;
+		console.log("loaded in!");
+		oneKey = game.input.keyboard.addKey(Phaser.Keyboard.ONE);
+		twoKey = game.input.keyboard.addKey(Phaser.Keyboard.TWO);
+		var threeKey = game.input.keyboard.addKey(Phaser.Keyboard.THREE);
+		var fourKey = game.input.keyboard.addKey(Phaser.Keyboard.FOUR);
 
-    graphicsSprite = game.add.sprite(0, 0);
+		player = game.add.sprite(370, 290, 'player');
+		player.enableBody = true;
+		game.physics.arcade.enable(player);
+		player.body.collideWorldBounds = true;
+		player.anchor.set(0.5);
 
-    crates = game.add.group();
+		crosshair = game.add.sprite(player.x + 200, player.y, 'crosshair');
+		crosshair.scale.setTo(0.2, 0.2);
 
-    crates.enableBody = true;
-    crates.scale.setTo(0.3, 0.3);
+		cursors = game.input.keyboard.createCursorKeys();
+
+		game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1);
+
+		weapon = game.add.weapon(30, 'bullet');
+		weapon.bulletLifeSpan = 10;
+		weapon.bulletKillType = Phaser.Weapon.KILL_CAMERA_BOUNDS;
+		weapon.bulletSpeed = 400;
+		weapon.fireRate = 60;
+		weapon.trackSprite(player, 0, 0, true);
+		weapon.multiFire = true;
+		weapon.bulletAngleVariance = 10;
+
+	    ammoCountText = game.add.text(16, 16, "Ammo: " + ammoCount, { fontSize: '16px', fill: '#ff0044' });
+	    ammoCountText.fixedToCamera = true;
+
+	    graphicsSprite = game.add.sprite(0, 0);
+
+	    crates = game.add.group();
+
+	    crates.enableBody = true;
+	    crates.scale.setTo(0.3, 0.3);
 
 
-    for(let i = 0; i < Math.random() * 3; i++) {
-       crate = crates.create(360 + Math.random() * 2000, 120 + Math.random() * 2000, 'crate');  
-       crate.body.width = 0;
-   	   crate.body.height = 0;
-   	   crate.body.immovable = true;
-    }
+	    for(let i = 0; i < Math.random() * 3; i++) {
+	       crate = crates.create(360 + Math.random() * 2000, 120 + Math.random() * 2000, 'crate');  
+	       crate.body.width = 0;
+	   	   crate.body.height = 0;
+	   	   crate.body.immovable = true;
+	    }
 
-    createEnemies();
+	    createEnemies();
 
-    drawInventory();
+	    drawInventory();
 
-    var shotgun = game.add.sprite(0, 0, 'shotgun');
-    shotgun.scale.setTo(0.05, 0.05);
-    shotgun.fixedToCamera = true;
-    shotgun.cameraOffset.x = 120;
-    shotgun.cameraOffset.y = 760;
+	    var shotgun = game.add.sprite(0, 0, 'shotgun');
+	    shotgun.scale.setTo(0.05, 0.05);
+	    shotgun.fixedToCamera = true;
+	    shotgun.cameraOffset.x = inventorySlots[0][0];
+	    shotgun.cameraOffset.y = inventorySlots[0][1];
 
+	    for(let i = 0; i < 4; i++) {
+	        var bush1 = game.add.sprite(Math.random() * 1020 - i*40 , Math.random() * 500 + 200, 'bush2');
+		    bush1.enableBody = true;
+		    bush1.scale.setTo(0.05, 0.05);	
+	    }
+
+	    healthGraphic = game.add.graphics(100, 100);
+	    healthGraphic.fixedToCamera = true;
+
+	    healthText = game.add.text(190, 15, "Health", { fontSize: '16px', fill: '#ff0044' });
+	    healthText.fixedToCamera = true;
+    }, this);
 }
+
+
+
+	//if(loaded === true) {
+
+//}
 
 /** 
 * Changes the players texture to 'playerRunning'
@@ -221,7 +322,7 @@ function calculateDistanceBetween(object1, object2) {
 function wakeZombie() {
 	let distance = calculateDistanceBetween(player, zombies[0]);
 
-	console.log(distance);
+	//console.log(distance);
 }
 
 /**
@@ -287,7 +388,12 @@ function readyWeapon() {
 function killCrate(player, crate) {
 	crate.kill();
 	console.log(ammoCount)
-	ammoCount = ammoCount + 8;
+	if(ammoType === 0) {
+		ammoCount = ammoCount + 8;		
+	} else if(ammoType === 1) {
+		ammoCount = ammoCount + 30;
+	}
+
 	let crateX = crate.body.x;
 	let crateY = crate.body.y;
 	ar = game.add.sprite(crateX, crateY, 'ar');
@@ -301,9 +407,10 @@ function killCrate(player, crate) {
 
 function arPickup(player, ar) {
 	ar.scale.setTo(0.025, 0.025);
+	hasAr = true;
 	ar.fixedToCamera = true;
-	ar.cameraOffset.x = 163;
-	ar.cameraOffset.y = 755;
+	ar.cameraOffset.x = inventorySlots[1][0];
+	ar.cameraOffset.y = inventorySlots[1][1];
 	gunSwitchAr()
 }
 
@@ -315,6 +422,48 @@ function gunSwitchAr() {
 	weapon.multiFire = true;
 	weapon.bulletAngleVariance = 0;
 	weaponReady = true;
+	ammoType = 1;
+}
+
+function gunSwitchShotgun() {
+	gunisAr = false;
+	weapon.bulletSpeed = 400;
+	weapon.fireRate = 60;
+	weapon.trackSprite(player, 0, 0, true);
+	weapon.multiFire = true;
+	weapon.bulletAngleVariance = 10;
+	ammoType = 0;
+}
+
+function drawHealth() {
+	healthGraphic.beginFill(0xFFFFFF);
+
+    healthGraphic.clear();
+    healthGraphic.endFill();
+    healthGraphic.lineStyle(2, 0x0000FF, 1);
+    healthGraphic.drawRect( 20, -85, 200, 20);
+    healthGraphic.beginFill(0xFFFFFF);
+    healthGraphic.drawRect( 20, -85, playerHealth * 2, 20);
+}
+
+function nextLine() {
+    if (lineIndex === content.length) {
+        return;
+ 	}
+    line = content[lineIndex].split(' ');
+    wordIndex = 0;
+    game.time.events.repeat(wordDelay, line.length, nextWord, this);
+    lineIndex++;
+}
+
+function nextWord() {
+    text.text = text.text.concat(line[wordIndex] + " ");
+    wordIndex++;
+    if (wordIndex === line.length) {
+        text.text = text.text.concat("\n");
+        game.time.events.add(lineDelay, nextLine, this);
+        loaded = true;
+    }
 }
 
 
@@ -324,73 +473,102 @@ function gunSwitchAr() {
 */  
  
 function update() {
-	handleCrosshair();
-	wakeZombie();
 
-	game.physics.arcade.collide(player, crate);
+	//if(loaded === true) {
 
-	game.physics.arcade.overlap(weapon.bullets, crates, killCrate, null, this);
+	game.time.events.add(Phaser.Timer.SECOND * 10, function() {
+    	handleCrosshair();
+		wakeZombie();
+		drawHealth();
 
-	game.physics.arcade.overlap(player, ar, arPickup);
+		oneKey.onDown.add(gunSwitchShotgun, this);
 
-	ammoCountText.setText("Ammo: " + ammoCount);
+		if(hasAr) {
+			twoKey.onDown.add(gunSwitchAr, this);
+		}
+
+		if(playerHealth === 0) {
+			weaponReady = false;
+			player.kill();
+			crosshair.kill();
+		}
+
+		if(player.body.x >= 1000 && checkpointCleared === false) {
+			createEnemies();
+			checkpointCleared = true;
+		}
+
+		game.physics.arcade.collide(player, crate);
+
+		game.physics.arcade.overlap(weapon.bullets, crates, killCrate, null, this);
+
+		game.physics.arcade.overlap(player, ar, arPickup);
+
+		ammoCountText.setText("Ammo: " + ammoCount);
+
+		//healthText.setText("Health");
 
 
-	if(gunisAr != true) {
-		if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true) {
+		if(gunisAr != true) {
+			if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true) {
+				ammoCount--;
+				prevFireTime = game.time.now;
+				for(let i = 0; i < 6; i++) {
+					weapon.fire();
+					weaponReady = false;
+				}
+
+				game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
+
+			}
+		} else if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true && gunisAr === true) {
 			ammoCount--;
 			prevFireTime = game.time.now;
-			for(let i = 0; i < 6; i++) {
-				weapon.fire();
+			weapon.fire();
+			arBulletsFired++;
+			if(arBulletsFired === 30) {
 				weaponReady = false;
+				game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
 			}
+		}
 
-			game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
-
+		
+		player.body.velocity.x = 0;
+		player.body.velocity.y = 0;
+		if(cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W)) {
+			player.body.velocity.y = -200;
+			if(walkingTrueFalse === false) {
+				walkingTrueFalse = true;
+				changePlayerTexture();
+			}
+		} else if(cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
+			player.body.velocity.y = 200;
+			if(walkingTrueFalse === false) {
+				walkingTrueFalse = true;
+				changePlayerTexture();
+			}
+		} else if(cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
+			player.body.velocity.x = 200;
+			if(walkingTrueFalse === false) {
+				walkingTrueFalse = true;
+				changePlayerTexture();
+			}
+		} else if(cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
+			player.body.velocity.x = -200;
+			if(walkingTrueFalse === false) {
+				walkingTrueFalse = true;
+				changePlayerTexture();
+			}
+		} else {
+			walkingTrueFalse = false;
+			player.loadTexture('player');
 		}
-	} else if(game.input.activePointer.isDown && prevFireTime + 60 <= game.time.now && ammoCount > 0 && weaponReady === true && gunisAr === true) {
-		ammoCount--;
-		prevFireTime = game.time.now;
-		weapon.fire();
-		arBulletsFired++;
-		if(arBulletsFired === 30) {
-			weaponReady = false;
-			game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
-		}
-	}
-
-	
-	player.body.velocity.x = 0;
-	player.body.velocity.y = 0;
-	if(cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W)) {
-		player.body.velocity.y = -200;
-		if(walkingTrueFalse === false) {
-			walkingTrueFalse = true;
-			changePlayerTexture();
-		}
-	} else if(cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
-		player.body.velocity.y = 200;
-		if(walkingTrueFalse === false) {
-			walkingTrueFalse = true;
-			changePlayerTexture();
-		}
-	} else if(cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
-		player.body.velocity.x = 200;
-		if(walkingTrueFalse === false) {
-			walkingTrueFalse = true;
-			changePlayerTexture();
-		}
-	} else if(cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-		player.body.velocity.x = -200;
-		if(walkingTrueFalse === false) {
-			walkingTrueFalse = true;
-			changePlayerTexture();
-		}
-	} else {
-		walkingTrueFalse = false;
-		player.loadTexture('player');
-	}
-
-	
-	
+    }, this);
 }
+
+
+		
+	
+	
+	
+//}

@@ -46,6 +46,14 @@ app.get('/assets/shotgun.png', (req, res, next) => {
 	res.sendFile(__dirname + '/assets/shotgun.png');
 });;
 
+app.get('/assets/bush.png', (req, res, next) => {
+	res.sendFile(__dirname + '/assets/bush.png');
+});;
+
+app.get('/assets/bush2.png', (req, res, next) => {
+	res.sendFile(__dirname + '/assets/bush2.png');
+});;
+
 app.listen(PORT, () => {
 	("Server listening on port: " + PORT + "");
 });
