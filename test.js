@@ -18,6 +18,7 @@ function preload() {
 	game.load.image('shotgun', 'assets/shotgun.png');
 	game.load.image('bush1', 'assets/bush.png');
 	game.load.image('bush2', 'assets/bush2.png');
+	game.load.image('knife', 'assets/knife.png');
 }
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
@@ -31,7 +32,8 @@ var content = [
 "",
 "In this post-apoctaliptic world, you must fight for",
 "your life against zombies, and whatever challenges you",
-"might face!"
+"might face!",
+"DANIEL SUCKS"
 ]
 
 var line = [];
@@ -49,8 +51,9 @@ var ammoCount;
 var fireRate = 100;
 var bullets;
 var ammoCountText;
-var zombieAmmount = 6;
+var zombieAmmount = 20;
 var zombie;
+var deadZombies = [];
 var weapon;
 var prevFireTime = 0;
 var inventoryGraphics;
@@ -77,21 +80,31 @@ var crate;
 var oneKey;
 var twoKey;
 
-var arAmmo = 30;
-var shotgunAmmo = 8;
+var arAmmo = 300;
+var shotgunAmmo = 800;
+
+var knife;
 
 //Ammo type 0 is shotgun, 1 is ar
 var ammoType = 0;
 
 var inventorySlots = [
 	[120, 760], 
-	[163, 755]
+	[163, 755],
+	[206, 755]
 ];
+
+var totalDistance = 0;
+var spawnedWave = false;
 
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 var healthGraphic;
 var healthText;
+
+
+
+var bulletsAlive;  //for debugging
 
 
 if(ammoType === 0) {
@@ -127,17 +140,22 @@ class Zombie {
 		this.someOtherZombie = otherZombie;
 	}
 
+	//bullet and zombie are backwards... i think...
 	gotHit(bullet, zombie) {
 		zombie.kill();
+		//zombie.destroy();
+		deadZombies.push(bullet);
+		//console.log(deadZombies);
 		bullet.kill()
 	}
 
 	withinRange() {
 		let distance = calculateDistanceBetween(this.zombie, player);
 
-		if(distance <= 20 && playerHealth > 0) {
+		if(distance <= 20 && playerHealth > 0 && deadZombies.includes(this.zombie) === false) {
+			//console.log(deadZombies.includes(this.zombie));
 			playerHealth = playerHealth - 0.5;
-			console.log(playerHealth);
+			//console.log(playerHealth);
 		}
 	}
 
@@ -172,9 +190,9 @@ function create() {
 
     text = game.add.text(32, 32, '', { font: "35px Arial", fill: "#19de65" });
 
-    nextLine();
+    //nextLine();
 
-    game.time.events.add(Phaser.Timer.SECOND * 10, function(){
+    //game.time.events.add(Phaser.Timer.SECOND * 10, function(){
     	//loaded = true;
 
     	text.kill();
@@ -198,9 +216,13 @@ function create() {
 
 		game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1);
 
-		weapon = game.add.weapon(30, 'bullet');
+		weapon = game.add.weapon(60, 'bullet');
 		weapon.bulletLifeSpan = 10;
-		weapon.bulletKillType = Phaser.Weapon.KILL_CAMERA_BOUNDS;
+		//Phaser.Weapon.KILL_DISTANCE = 100;
+
+		//bulletLifespan = 1;
+		weapon.bulletKillType = Phaser.Weapon.KILL_DISTANCE;
+		weapon.bulletKillDistance = 500;
 		weapon.bulletSpeed = 400;
 		weapon.fireRate = 60;
 		weapon.trackSprite(player, 0, 0, true);
@@ -217,13 +239,6 @@ function create() {
 	    crates.enableBody = true;
 	    crates.scale.setTo(0.3, 0.3);
 
-
-	    for(let i = 0; i < Math.random() * 3; i++) {
-	       crate = crates.create(360 + Math.random() * 2000, 120 + Math.random() * 2000, 'crate');  
-	       crate.body.width = 0;
-	   	   crate.body.height = 0;
-	   	   crate.body.immovable = true;
-	    }
 
 	    createEnemies();
 
@@ -246,7 +261,10 @@ function create() {
 
 	    healthText = game.add.text(190, 15, "Health", { fontSize: '16px', fill: '#ff0044' });
 	    healthText.fixedToCamera = true;
-    }, this);
+
+	    //var knife = game.add.sprite(inventorySlots[2][0], inventorySlots[2],[1], 'knife');
+	    //knife = game.add.sprite(0, 0, 'knife');
+    //}, this);
 }
 
 
@@ -457,6 +475,9 @@ function nextLine() {
 }
 
 function nextWord() {
+	//if(game.input.keyboard.isDown(Phaser.Keyboard.W).isDown) {
+	//	return
+	//}
     text.text = text.text.concat(line[wordIndex] + " ");
     wordIndex++;
     if (wordIndex === line.length) {
@@ -466,17 +487,28 @@ function nextWord() {
     }
 }
 
+function waveSpawned() {
+	spawnedWave = false;
+}
 
-/*   Make zombies have 75% chance of spawning in a random house
-*  Houses have guns and loot and stuff
-*  change player gun to shoot like shotgun
-*/  
+function createCrates() {
+	for(let i = 0; i < Math.random() * 3; i++) {
+       crate = crates.create(360 + Math.random() * 2000, 120 + Math.random() * 2000, 'crate');  
+       crate.body.width = 0;
+   	   crate.body.height = 0;
+   	   crate.body.immovable = true;
+	}
+}
  
 function update() {
 
+	console.log(weapon.bullets.countLiving());
+
+
+
 	//if(loaded === true) {
 
-	game.time.events.add(Phaser.Timer.SECOND * 10, function() {
+	//game.time.events.add(Phaser.Timer.SECOND * 10, function() {
     	handleCrosshair();
 		wakeZombie();
 		drawHealth();
@@ -518,6 +550,8 @@ function update() {
 					weaponReady = false;
 				}
 
+				weapon.bullets.lifeSpan = 10;
+
 				game.time.events.add(Phaser.Timer.SECOND * 0.8, readyWeapon, this);
 
 			}
@@ -540,30 +574,62 @@ function update() {
 			if(walkingTrueFalse === false) {
 				walkingTrueFalse = true;
 				changePlayerTexture();
+				
 			}
+
+			if(totalDistance % 1000 === 0 && totalDistance > 100) {
+					createEnemies();
+					createCrates();
+			}
+
+			totalDistance++;
 		} else if(cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
 			player.body.velocity.y = 200;
 			if(walkingTrueFalse === false) {
 				walkingTrueFalse = true;
 				changePlayerTexture();
 			}
+
+			/*if(totalDistance % 1000 === 0) {
+					createEnemies();
+					createCrates();
+			}*/
+
+			totalDistance++;
 		} else if(cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
 			player.body.velocity.x = 200;
 			if(walkingTrueFalse === false) {
 				walkingTrueFalse = true;
 				changePlayerTexture();
+				
 			}
+
+			if(totalDistance % 1000 === 0) {
+					createEnemies();
+					createCrates();
+			}
+
+			totalDistance++;
 		} else if(cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
 			player.body.velocity.x = -200;
 			if(walkingTrueFalse === false) {
 				walkingTrueFalse = true;
 				changePlayerTexture();
+				
 			}
+
+			if(totalDistance % 1000 === 0) {
+				createEnemies();
+				createCrates();
+			}
+
+
+			totalDistance++;
 		} else {
 			walkingTrueFalse = false;
 			player.loadTexture('player');
 		}
-    }, this);
+   // }, this);
 }
 
 
